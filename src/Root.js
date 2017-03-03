@@ -47,7 +47,7 @@ export default class Root extends React.Component {
   }
 
   componentDidMount() {
-    this.refs.scrollView.scrollTo({y: 200})
+    // this.refs.scrollView.scrollTo({y: 200})
   }
 
   render() {

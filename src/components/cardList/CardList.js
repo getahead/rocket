@@ -37,26 +37,28 @@ export default class CardList extends React.Component {
     }
   }
 
-  calculateOffset(scrollValue, index) {
+  calculateOffset(scrollValue, index, rotateX) {
     const {offsetAngle, cardsCount} = this.state;
-    let additionalOffset = ((cardsCount - index - 1) * 216) / ((scrollValue + 1) * 2 * (offsetAngle / cardsCount));
+    let additionalOffset = (offsetAngle) * (cardsCount - index - 1);
     let offset = RADIUS * (1 - Math.sin((Math.PI * offsetAngle * index) / 180));
 
-    additionalOffset = additionalOffset >= (cardsCount - index) * RADIUS / cardsCount
-      ? (cardsCount - index) * RADIUS / cardsCount
-      : additionalOffset;
+    // additionalOffset = additionalOffset >= (cardsCount - index) * RADIUS / cardsCount
+    //   ? (cardsCount - index) * RADIUS / cardsCount
+    //   : additionalOffset;
     // offset = offset >= RADIUS ? offset + scrollValue : offset;
-    console.log(additionalOffset)
-    return offset + additionalOffset;
+    // console.log(offset)
+    return offset// + additionalOffset;
   }
 
-  calculateRotationAngle(scrollValue, index) {
+  calculateRotationAngle(scrollValue, index, offset) {
     const {offsetAngle} = this.state;
     let rotateX = ((AMPLITUDE_ANGLE * AVAILABLE_ANGLE_COEFFICIENT - scrollValue / Math.PI)
       - offsetAngle * index) * -1;
 
     rotateX = rotateX >= 0 ? 0 : rotateX;
+    // rotateX = offset >= RADIUS / 2 ? AMPLITUDE_ANGLE * AVAILABLE_ANGLE_COEFFICIENT * -1 : rotateX;
 
+    console.log(index, offset, rotateX)
     return rotateX;
   }
 
@@ -68,7 +70,7 @@ export default class CardList extends React.Component {
       <View style={styles.container}>
         {cards.map((card, index) => {
           const offset = this.calculateOffset(scrollValue, index);
-          const rotateX = this.calculateRotationAngle(scrollValue, index)
+          const rotateX = this.calculateRotationAngle(scrollValue, index, offset)
 
           return <Animated.View
             key={index}
