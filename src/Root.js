@@ -1,7 +1,6 @@
 import React from 'react';
-import {StyleSheet, Text, ScrollView} from 'react-native';
-
-import CardList from './components/cardList/CardList';
+import {StyleSheet, View} from 'react-native';
+import ScrollList from './components/scrollList/ScrollList';
 
 const CARDS = [
   {
@@ -32,41 +31,9 @@ const CARDS = [
 ];
 
 export default class Root extends React.Component {
-  constructor(props){
-    super(props);
-
-    this.onScroll = this.onScroll.bind(this);
-    this.state = {
-      offsetY: 0
-    };
-  }
-
-  onScroll(e) {
-    const {y: offsetY} = e.nativeEvent.contentOffset;
-    this.setState({offsetY: offsetY <= 0 ? 0 : offsetY})
-  }
-
-  componentDidMount() {
-    // this.refs.scrollView.scrollTo({y: 200})
-  }
-
   render() {
     return (
-      <ScrollView
-        ref="scrollView"
-        scrollEventThrottle={1}
-        style={styles.container}
-        onScroll={this.onScroll}
-      >
-        <CardList cards={CARDS} scrollValue={this.state.offsetY} />
-      </ScrollView>
+      <ScrollList cards={CARDS} />
     );
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: 25,
-    backgroundColor: '#F5FCFF',
-  }
-});

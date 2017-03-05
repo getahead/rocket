@@ -1,116 +1,142 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  Animated,
-  Image
-} from 'react-native';
+import {StyleSheet, Text, View, Image, Animated} from 'react-native';
 
-import Card from '../card/Card';
-
-const PI = 3.14;
-const RADIUS = 100;
-const AMPLITUDE_ANGLE = 100;
-const AVAILABLE_ANGLE_COEFFICIENT = 2/3;
-
-// const
+const CARD_WIDTH = 320;
+const CARD_HEIGHT = 200;
 
 export default class CardList extends React.Component {
   static propTypes = {
     cards: React.PropTypes.array,
-    scrollValue: React.PropTypes.number
+    scrollValue: React.PropTypes.object
   };
 
   constructor(props) {
     super(props);
-    this.state = this.init(props);
+
+    this.getScale = this.getScale.bind(this);
+    this.getCardOffset = this.getCardOffset.bind(this);
+    this.getCardRotateAngle = this.getCardRotateAngle.bind(this);
+    this.getCardWidth = this.getCardWidth.bind(this);
   }
 
-  init(props) {
-    const cardsCount = props.cards.length;
-    const offsetAngle = AMPLITUDE_ANGLE / cardsCount;
+  getCardOffset(scrollValue, index) {
+    const {cards} = this.props;
 
-    return {
-      cardsCount,
-      offsetAngle
-    }
+    return scrollValue.interpolate({
+      inputRange: [
+        0,
+        cards.length * (CARD_HEIGHT / 2),
+        cards.length * CARD_HEIGHT
+      ],
+      outputRange: [
+        -1 * (index + 1) * (CARD_HEIGHT / 3) + 100,
+        -CARD_HEIGHT * (index + 1) + CARD_HEIGHT,
+        -CARD_HEIGHT * (index + 1) + CARD_HEIGHT
+      ]
+    });
   }
 
-  calculateOffset(scrollValue, index, rotateX) {
-    const {offsetAngle, cardsCount} = this.state;
-    let additionalOffset = (offsetAngle) * (cardsCount - index - 1);
-    let offset = RADIUS * (1 - Math.sin((Math.PI * offsetAngle * index) / 180));
+  getCardRotateAngle(scrollValue, index) {
+    const {cards} = this.props;
 
-    // additionalOffset = additionalOffset >= (cardsCount - index) * RADIUS / cardsCount
-    //   ? (cardsCount - index) * RADIUS / cardsCount
-    //   : additionalOffset;
-    // offset = offset >= RADIUS ? offset + scrollValue : offset;
-    // console.log(offset)
-    return offset// + additionalOffset;
+    return scrollValue.interpolate({
+      inputRange: [0, cards.length * (CARD_HEIGHT / 3)],
+      outputRange: [`-${(50 / cards.length) * (index + 1)}deg`, '-25deg']
+    });
   }
 
-  calculateRotationAngle(scrollValue, index, offset) {
-    const {offsetAngle} = this.state;
-    let rotateX = ((AMPLITUDE_ANGLE * AVAILABLE_ANGLE_COEFFICIENT - scrollValue / Math.PI)
-      - offsetAngle * index) * -1;
+  getOpacity(scrollValue, index) {
+    const {cards} = this.props;
 
-    rotateX = rotateX >= 0 ? 0 : rotateX;
-    // rotateX = offset >= RADIUS / 2 ? AMPLITUDE_ANGLE * AVAILABLE_ANGLE_COEFFICIENT * -1 : rotateX;
+    return scrollValue.interpolate({
+      inputRange: [0, Math.pow(index + 1, 2) * (CARD_HEIGHT / cards.length), Math.pow(index + 1, 2) * CARD_HEIGHT],
+      outputRange: [1, .95, (index + 1) / cards.length]
+    })
+  }
 
-    console.log(index, offset, rotateX)
-    return rotateX;
+  getScale(scrollValue, index) {
+    const {cards} = this.props;
+
+    return scrollValue.interpolate({
+      inputRange: [0, 1, Math.pow(index + 1, 2) * (CARD_HEIGHT / cards.length), Math.pow(index + 1, 2) * CARD_HEIGHT],
+      outputRange: [1, 1, .95, .8]
+    })
+  }
+
+  getCardWidth(scrollValue, index) {
+    const {cards} = this.props;
+
+    return scrollValue.interpolate({
+      inputRange: [0, 1, Math.pow(index + 1, 2) * (CARD_HEIGHT / cards.length)],
+      outputRange: [0, 0, -5]
+    })
   }
 
   render() {
     const {cards = [], scrollValue} = this.props;
-    const {offsetAngle, cardsCount} = this.state;
+    const containerHeight = cards.length * CARD_HEIGHT - scrollValue.__getValue();
 
     return (
-      <View style={styles.container}>
-        {cards.map((card, index) => {
-          const offset = this.calculateOffset(scrollValue, index);
-          const rotateX = this.calculateRotationAngle(scrollValue, index, offset)
-
-          return <Animated.View
-            key={index}
-            style={[styles.card, {
-              zIndex: cardsCount - index,
+      <Animated.View style={[styles.container, {
+        height: containerHeight,
+        transform: [
+          {translateY: scrollValue}
+        ]
+      }]}>
+        {cards.map((card, index) => <Animated.View
+          key={index}
+          style={[styles.card, {
+              zIndex: index,
+              opacity: this.getOpacity(scrollValue, index),
               transform: [
-                {translateY: RADIUS / 2 + (offset) * 2 - 216 * index},
+                {scale: this.getScale(scrollValue, index)},
+                {translateY: this.getCardOffset(scrollValue, index)}
               ]
-            }
-            ]}
+            }]}
           >
-            <Image source={require('../card/card.png')} style={[styles.image, {
+          <Animated.View style={[styles.imageBox, {
               transform: [
-                {perspective: 1000 + scrollValue * index},
-                {rotateX: `${rotateX}deg`},
+                {perspective: 1000 + scrollValue.__getValue() * (index + 1)},
+                {rotateX: this.getCardRotateAngle(scrollValue, index)},
               ]
-            }]}/>
+            }]}>
+            <Animated.View style={[styles.border, {
+              transform: [
+                {translateY: this.getCardWidth(scrollValue, index)}
+              ]
+            }]} />
+            <Image source={require('./card.png')} style={styles.image}/>
           </Animated.View>
-        })}
-      </View>
+        </Animated.View>
+        )}
+      </Animated.View>
     );
-  }
+}
 }
 
 const styles = StyleSheet.create({
-  scrollView: {
-    flex: 1,
-    backgroundColor: '#6A85B1',
-    height: 500
+  container: {
+    flex: 1
   },
-  card: {
+  imageBox: {
     position: 'relative',
-    left: 0,
-    right: 0,
-    backfaceVisibility: 'hidden',
     overflow: 'hidden',
+    borderRadius: 25,
+    width: CARD_WIDTH,
+    alignSelf: 'center'
   },
   image: {
-    width: 343,
-    height: 216,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     alignSelf: 'center'
+  },
+  border: {
+    position: 'absolute',
+    zIndex: 1,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: '#000'
   }
 });
